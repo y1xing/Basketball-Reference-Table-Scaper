@@ -5,6 +5,8 @@ import time
 
 class NbaDataCollector:
     def __init__(self, table_id, url):
+        """table_id is the id attribute of the table (inspect element)
+            url is the url of the page"""
         self.award = table_id
         self.url = url
         self.headers = []
@@ -17,7 +19,9 @@ class NbaDataCollector:
         self.df = None
         self.get_headers()
 
-    def get_stats_from_comments(self):
+    def get_table_from_comments(self):
+        """Extract table from comments if not found in main body"""
+
         self.web_content = requests.get(url=self.url).text
         self.soup = BeautifulSoup(self.web_content, "lxml")
         comments = self.soup.find_all(string=lambda text: isinstance(text, Comment))
@@ -26,11 +30,11 @@ class NbaDataCollector:
                 if self.award in comment:
                     commentsoup = BeautifulSoup(comment, 'lxml')
                     table_soup = commentsoup.select_one(selector="table")
-                    # all_stats_comments = commentsoup.select(selector=f"table tbody tr {tag}")
         return table_soup
 
     def get_table(self):
-        print(self.url)
+        """Extra table from page using the table_id and url"""
+
         self.web_content = requests.get(url=self.url).text
         self.soup = BeautifulSoup(self.web_content, "lxml")
 
@@ -41,11 +45,12 @@ class NbaDataCollector:
                 # To get the first table with the id
                 break
 
+        # If table not found, find table from the comments
         if self.table == None:
-            self.table = self.get_stats_from_comments()
-            print("got it from comments")
+            self.table = self.get_table_from_comments()
 
-    def get_headers(self, year=""):
+    def get_headers(self):
+        """Get the headers/column names of the table"""
         self.get_table()
 
         try:
@@ -54,48 +59,63 @@ class NbaDataCollector:
             header_html = self.table.select(selector="thead tr")[0].select(selector="th")
 
         self.headers = [header.get('data-stat') for header in header_html]
+
+        # If headers cannot be extracted with attribute data-stat, extract the text of the element
         if None in self.headers:
             self.headers = [header.text for header in header_html]
         self.populate_data_headers()
 
     def populate_data_headers(self):
+        """Populate the object dictionary with the table's headers"""
+
         for header in self.headers:
             self.data[header] = []
+
+        # Add extra headers that cannot be extracted from the table
         self.data['year'] = []
         self.data['player_url'] = []
         self.data['player_img'] = []
 
-    def get_data_with_overheader(self, all_stats, year):
+    def get_data_with_datastat(self, all_stats, year):
+        """Extract the data from tables with data-stat attribute in element"""
+
         for header in self.headers:
             tmp_list = [stat.text for stat in all_stats if stat.get('data-stat') == header]
-            # print(f"length of tmp_list is {len(tmp_list)}")
-
+        
             years = [year for i in range(len(tmp_list))]
             self.data[header].extend(tmp_list)
 
         self.data['year'].extend(years)
         print("Collected data with data-stat")
 
-    def get_data_without_overheader(self, all_stats, year):
+    def get_data_without_datastat(self, all_stats, year):
+        """Extract the data from tables without data-stat attribute in element"""
+        
         for i in range(len(self.headers)):
             tmp_list = [stat.text for stat in all_stats[i::len(self.headers)]]
             years = [year for i in range(len(tmp_list))]
             self.data[self.headers[i]].extend(tmp_list)
 
         self.data['year'].extend(years)
-        print("Collected data without overheader")
+        print("Collected data without data-stat")
 
     def get_data(self, year=""):
+        """Extra the data from the page"""
+
+        # Reset the data if a loop is used
         self.all_stats = []
         self.table = None
         self.get_table()
 
+        # Some tables include rows where the th element contain the statistics instead of td
         all_stats_th = self.table.select(selector="tbody tr th")
         all_stats_td = self.table.select(selector="tbody tr td")
+
+        # If all_stats_td have no stats, it means the table has no tbody element
         if len(all_stats_td) == 0:
-            # Table somehow doesn't have a tbody
             all_stats_td = self.table.select(selector="tr td")
 
+        # If each row of statistics contain a th element, we will have to arrange the statistics in proper order
         if len(all_stats_th) != 0:
             columns_no = len(self.headers)
             all_stats_len = len(all_stats_td) + len(all_stats_th)
@@ -110,9 +130,10 @@ class NbaDataCollector:
         else:
             self.all_stats = all_stats_td
 
-        self.get_data_with_overheader(self.all_stats, year)
+        # If statistics cannot be scraped with data-stat, use other function
+        self.get_data_with_datastat(self.all_stats, year)
         if len(self.data[self.headers[0]]) == 0:
-            self.get_data_without_overheader(self.all_stats, year)
+            self.get_data_without_datastat(self.all_stats, year)
 
         self.get_player_links(self.all_stats)
 
@@ -120,12 +141,15 @@ class NbaDataCollector:
 
     def get_player_links(self, all_stats):
         """Get player links and their image url"""
+
         tmp_list = [f"https://www.basketball-reference.com/{stat.find(name='a').get('href')}" for stat in all_stats if stat.get('data-stat') == 'player']
         player_img = [f"https://www.basketball-reference.com/req/202106291/images/players/{link.split('/')[-1].split('.')[0]}.jpg" for link in tmp_list]
         self.data['player_url'].extend(tmp_list)
         self.data['player_img'].extend(player_img)
 
     def populate_dict(self):
+        """Populate the data dictionary so that it can be converted into a csv"""
+
         for stat, values in self.data.items():
             for i in range(len(values)):
                 if values[i] == "":
@@ -135,6 +159,8 @@ class NbaDataCollector:
             self.tmp_dict = {}
 
     def collect_upload_all_data(self, csv_name):
+        """Upload the data into a pandas dataframe and csv file"""
+
         start_time = time.time()
         self.populate_dict()
         self.df = pd.DataFrame(self.data)
