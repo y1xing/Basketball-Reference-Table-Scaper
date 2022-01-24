@@ -106,7 +106,8 @@ class NbaDataCollector:
         self.get_table()
 
         # Some tables include rows where the th element contain the statistics instead of td
-        all_stats_th = self.table.select(selector="tbody tr th")
+        all_stats_th_uncleaned = self.table.select(selector="tbody tr th")
+        all_stats_th = [stats for stats in all_stats_th_uncleaned if stats.get("class") == ["right"]]
         all_stats_td = self.table.select(selector="tbody tr td")
 
         # If all_stats_td have no stats, it means the table has no tbody element
