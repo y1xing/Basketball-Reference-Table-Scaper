@@ -20,5 +20,5 @@ mvp = NbaDataCollector(table_id=table_id, url=url)
 
 `mvp.collect_upload_all_data("mvp-from-1956-to-2021.csv")`
 
-
+#Please email me at royalcheng99@gmail.com if you find any bugs
 
