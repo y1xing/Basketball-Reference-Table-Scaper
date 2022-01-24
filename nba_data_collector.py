@@ -3,23 +3,6 @@ from bs4 import BeautifulSoup, Comment
 import pandas as pd
 import time
 
-header_parameter = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36",
-    "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
-}
-
-"""
-https://www.basketball-reference.com/players/a/
-https://www.basketball-reference.com/awards/awards_2021.html
-https://www.basketball-reference.com/players/m/mitchdo01.html
-https://www.basketball-reference.com/leaders/mp_career.html
-
-"""
-
-"""
-url should be the whole thing. If need to change change outside of the class
-"""
-
 class NbaDataCollector:
     def __init__(self, table_id, url):
         self.award = table_id
@@ -35,7 +18,7 @@ class NbaDataCollector:
         self.get_headers()
 
     def get_stats_from_comments(self):
-        self.web_content = requests.get(url=self.url, headers=header_parameter).text
+        self.web_content = requests.get(url=self.url).text
         self.soup = BeautifulSoup(self.web_content, "lxml")
         comments = self.soup.find_all(string=lambda text: isinstance(text, Comment))
         for comment in comments:
@@ -48,7 +31,7 @@ class NbaDataCollector:
 
     def get_table(self):
         print(self.url)
-        self.web_content = requests.get(url=self.url, headers=header_parameter).text
+        self.web_content = requests.get(url=self.url).text
         self.soup = BeautifulSoup(self.web_content, "lxml")
 
         all_tables = self.soup.select(selector="table")
