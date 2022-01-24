@@ -86,7 +86,6 @@ class NbaDataCollector:
             self.data[header].extend(tmp_list)
 
         self.data['year'].extend(years)
-        print("Collected data with data-stat")
 
     def get_data_without_datastat(self, all_stats, year):
         """Extract the data from tables without data-stat attribute in element"""
@@ -97,7 +96,6 @@ class NbaDataCollector:
             self.data[self.headers[i]].extend(tmp_list)
 
         self.data['year'].extend(years)
-        print("Collected data without data-stat")
 
     def get_data(self, year=""):
         """Extra the data from the page"""
@@ -167,6 +165,7 @@ class NbaDataCollector:
         self.df.to_csv(csv_name)
         print(f"{csv_name} has been created")
         print("--- %s seconds ---" % (time.time() - start_time))
+
 
 
 
