@@ -56,7 +56,21 @@ class NbaDataCollector:
         try:
             header_html = self.table.select(selector="thead tr")[1].select(selector="th")
         except:
-            header_html = self.table.select(selector="thead tr")[0].select(selector="th")
+            try:
+                # Means there is no overheader, get the first row
+                header_html = self.table.select(selector="thead tr")[0].select(selector="th")
+            except IndexError:
+                # If header cannot be found in the thead, find it in the tbody
+                try:
+                    header_html = self.table.select(selector="tbody tr")[0].select(selector="th")
+                except:
+                    # If still cannot find, find with the class "thead"
+                    try:
+                        header_html = self.table.select(selector="tbody tr.thead")[0].select(selector="th")
+                    except:
+                        # Table does not have a tbody
+                        header_html = self.table.select(selector="tr.thead")[1].select(selector="th")
+
 
         self.headers = [header.get('data-stat') for header in header_html]
 
@@ -81,21 +95,23 @@ class NbaDataCollector:
 
         for header in self.headers:
             tmp_list = [stat.text for stat in all_stats if stat.get('data-stat') == header]
-        
+
             years = [year for i in range(len(tmp_list))]
             self.data[header].extend(tmp_list)
 
         self.data['year'].extend(years)
+        print("Data Collected With Datastat")
 
     def get_data_without_datastat(self, all_stats, year):
         """Extract the data from tables without data-stat attribute in element"""
-        
+
         for i in range(len(self.headers)):
             tmp_list = [stat.text for stat in all_stats[i::len(self.headers)]]
             years = [year for i in range(len(tmp_list))]
             self.data[self.headers[i]].extend(tmp_list)
 
         self.data['year'].extend(years)
+        print("Data Collected Without Datastat")
 
     def get_data(self, year=""):
         """Extract the data from the page"""
@@ -108,6 +124,9 @@ class NbaDataCollector:
 
         # Get all the tr in the table, remove the tr that have a class on it as they do not hold data
         all_stats_tr_uncleaned = self.table.select(selector="tbody tr")
+        if len(all_stats_tr_uncleaned) == 0:
+            all_stats_tr_uncleaned = self.table.select(selector="tr")
+
         for stats in all_stats_tr_uncleaned:
             if not stats.has_attr("class"):
                 all_stats_tr.append(stats)
@@ -137,6 +156,7 @@ class NbaDataCollector:
         self.get_player_links(self.all_stats)
 
         print(f"{self.url} Done Collecting")
+
 
     def get_data_failed(self, year=""):
         """Extract the data from the page: Failed version as it didnt work on all tables"""
