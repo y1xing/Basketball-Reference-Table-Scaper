@@ -63,4 +63,13 @@ for year in range(1986, 2022):
         pass
 
 mip.collect_upload_all_data("mip-from-1986-to-2021.csv")
+
+#DRAFT
+draft = NbaDataCollector("stats", "https://www.basketball-reference.com/draft/NBA_1950.html")
+
+for year in range(1950, 2022):
+    draft.url = f"https://www.basketball-reference.com/draft/NBA_{year}.html"
+    draft.get_data(year)
+
+draft.collect_upload_all_data("nba-draft-1950-2021.csv")
 print("--- %s seconds ---" % (time.time() - start_time))

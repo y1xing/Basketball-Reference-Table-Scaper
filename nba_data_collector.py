@@ -98,7 +98,48 @@ class NbaDataCollector:
         self.data['year'].extend(years)
 
     def get_data(self, year=""):
-        """Extra the data from the page"""
+        """Extract the data from the page"""
+        # Reset the data if a loop is used
+        self.all_stats = []
+        self.table = None
+        self.get_table()
+
+        all_stats_tr = []
+
+        # Get all the tr in the table, remove the tr that have a class on it as they do not hold data
+        all_stats_tr_uncleaned = self.table.select(selector="tbody tr")
+        for stats in all_stats_tr_uncleaned:
+            if not stats.has_attr("class"):
+                all_stats_tr.append(stats)
+
+        # Get the th and td element within the tr and populate the all stats list
+        for stats in all_stats_tr:
+            ths = stats.find_all(name="th")
+            tds = stats.find_all(name="td")
+            if ths != None:
+                if len(ths) == 1:
+                    self.all_stats.append(ths[0])
+                else:
+                    for th in ths:
+                        self.all_stats.append(th)
+            if tds != None:
+                if len(tds) == 1:
+                    self.all_stats.append(tds[0])
+                else:
+                    for td in tds:
+                        self.all_stats.append(td)
+
+        # If statistics cannot be scraped with data-stat, use other function
+        self.get_data_with_datastat(self.all_stats, year)
+        if len(self.data[self.headers[0]]) == 0:
+            self.get_data_without_datastat(self.all_stats, year)
+
+        self.get_player_links(self.all_stats)
+
+        print(f"{self.url} Done Collecting")
+
+    def get_data_failed(self, year=""):
+        """Extract the data from the page: Failed version as it didnt work on all tables"""
 
         # Reset the data if a loop is used
         self.all_stats = []
@@ -107,8 +148,23 @@ class NbaDataCollector:
 
         # Some tables include rows where the th element contain the statistics instead of td
         all_stats_th_uncleaned = self.table.select(selector="tbody tr th")
-        all_stats_th = [stats for stats in all_stats_th_uncleaned if stats.get("class") == ["right"] or stats.get("class") == ["left"]]
-        all_stats_td = self.table.select(selector="tbody tr td")
+        all_stats_th = []
+        for stats in all_stats_th_uncleaned:
+            try:
+                if "right" in stats.get("class") or "left" in stats.get("class"):
+                    all_stats_th.append(stats)
+            except:
+                pass
+
+        all_stats_td_uncleaned = self.table.select(selector="tbody tr td")
+        all_stats_td = []
+        for stats in all_stats_td_uncleaned:
+            try:
+                if "right" in stats.get("class") or "left" in stats.get("class") or "center" in stats.get("class") or "right" in stats.get("claass") or "skip" not in stats.get("data-stat"):
+                    all_stats_td.append(stats)
+            except:
+                pass
+
 
         # If all_stats_td have no stats, it means the table has no tbody element
         if len(all_stats_td) == 0:
@@ -166,8 +222,6 @@ class NbaDataCollector:
         self.df.to_csv(csv_name)
         print(f"{csv_name} has been created")
         print("--- %s seconds ---" % (time.time() - start_time))
-
-
 
 
 
