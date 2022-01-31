@@ -47,11 +47,16 @@ class NbaDataCollector:
 
         # If table not found, find table from the comments
         if self.table == None:
-            self.table = self.get_table_from_comments()
+            try:
+                self.table = self.get_table_from_comments()
+            except UnboundLocalError:
+                print(f"{self.url}: Table/Website is not available")
 
     def get_headers(self):
         """Get the headers/column names of the table"""
         self.get_table()
+        if self.table == None:
+            return "No Table"
 
         try:
             header_html = self.table.select(selector="thead tr")[1].select(selector="th")
@@ -100,7 +105,6 @@ class NbaDataCollector:
             self.data[header].extend(tmp_list)
 
         self.data['year'].extend(years)
-        print("Data Collected With Datastat")
 
     def get_data_without_datastat(self, all_stats, year):
         """Extract the data from tables without data-stat attribute in element"""
@@ -119,6 +123,8 @@ class NbaDataCollector:
         self.all_stats = []
         self.table = None
         self.get_table()
+        if self.table == None:
+            return "No Table Found"
 
         all_stats_tr = []
 

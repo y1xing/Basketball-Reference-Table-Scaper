@@ -73,3 +73,32 @@ for year in range(1950, 2022):
 
 draft.collect_upload_all_data("nba-draft-1950-2021.csv")
 print("--- %s seconds ---" % (time.time() - start_time))
+
+fcw = NbaDataCollector('fc-w', 'https://www.basketball-reference.com/allstar/NBA_2017_voting-frontcourt-western-conference.html')
+bcw = NbaDataCollector('bc-w', 'https://www.basketball-reference.com/allstar/NBA_2017_voting-backcourt-western-conference.html')
+bce = NbaDataCollector('bc-e', 'https://www.basketball-reference.com/allstar/NBA_2017_voting-backcourt-eastern-conference.html')
+fce = NbaDataCollector('fc-e', 'https://www.basketball-reference.com/allstar/NBA_2017_voting-frontcourt-eastern-conference.html')
+
+
+for year in range(2017, 2022):
+    fce.url = f'https://www.basketball-reference.com/allstar/NBA_{year}_voting-frontcourt-eastern-conference.html'
+    bce.url = f'https://www.basketball-reference.com/allstar/NBA_{year}_voting-backcourt-eastern-conference.html'
+    fcw.url = f'https://www.basketball-reference.com/allstar/NBA_{year}_voting-frontcourt-western-conference.html'
+    bcw.url = f'https://www.basketball-reference.com/allstar/NBA_{year}_voting-backcourt-western-conference.html'
+
+    fce.get_data(year)
+    bce.get_data(year)
+    fcw.get_data(year)
+    bcw.get_data(year)
+
+
+fce.populate_dict()
+bce.populate_dict()
+fcw.populate_dict()
+bcw.populate_dict()
+
+fce_df = pd.DataFrame(fce.data)
+bce_df = pd.DataFrame(bce.data)
+fcw_df = pd.DataFrame(fcw.data)
+bcw_df = pd.DataFrame(bcw.data)
+
